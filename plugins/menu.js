@@ -3,6 +3,7 @@ const { cmd, commands } = require("../command");
 cmd(
   {
     pattern: "menu",
+    react: "📜",
     desc: "Displays all available commands",
     category: "main",
     filename: __filename,
@@ -56,4 +57,5 @@ cmd(
     }
   }
 );
+
 
