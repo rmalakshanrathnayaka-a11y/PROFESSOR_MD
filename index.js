@@ -68,7 +68,7 @@ async function connectToWA() {
     const { version } = await fetchLatestBaileysVersion();
 
     const zanta = makeWASocket({
-        logger: P({ level: 'silent' }),
+        logger: P({ level: 'info' }),
         printQRInTerminal: false,
         browser: Browsers.macOS("Firefox"),
         auth: state,
