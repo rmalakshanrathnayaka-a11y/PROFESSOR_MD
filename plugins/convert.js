@@ -1,7 +1,6 @@
 const { cmd, commands } = require("../command");
 const fs = require('fs');
-const ffmpeg = require('fluent-ffmpeg'); // Requires 'fluent-ffmpeg' dependency
-// const axios = require('axios'); // Required for external APIs like logo
+const ffmpeg = require('fluent-ffmpeg'); // fluent-ffmpeg dependency එක අවශ්‍යයි
 
 // --- Helper function to determine media type from quoted message ---
 const getMediaType = (quoted) => {
@@ -10,7 +9,7 @@ const getMediaType = (quoted) => {
     let isImage = mediaType === 'imageMessage';
     let isVideo = mediaType === 'videoMessage';
     
-    // Check for View Once messages (if you want to support them)
+    // View Once messages හසුරුවයි
     if (quoted.msg && quoted.msg.viewOnce) {
         const messageKeys = Object.keys(quoted.msg.message);
         if (messageKeys.includes('imageMessage')) isImage = true;
@@ -39,10 +38,7 @@ cmd(
 
       reply("*Converting sticker to media...* ⏳");
 
-      // Baileys download function downloads the sticker content
       const mediaBuffer = await zanta.downloadMediaMessage(quoted);
-      
-      // Check if the sticker is animated (video) or static (image)
       const isAnimated = quoted.msg.isAnimated;
       
       if (!isAnimated) {
@@ -74,8 +70,8 @@ cmd(
 // --- 2. MEDIA to STICKER (s) ---
 cmd(
   {
-    pattern: "sticker",
-    alias: ["s", "st"],
+    pattern: "s",
+    alias: ["sticker", "st"],
     react: "🌟",
     desc: "Converts a replied image or video into a sticker.",
     category: "convert",
@@ -86,15 +82,15 @@ cmd(
       if (!quoted) return reply("*Please reply to an image or video!* 🌟");
       
       const { isImage, isVideo } = getMediaType(quoted);
-      // Limit video size for sticker conversion (optional, but good practice)
-      if (!isImage && (!isVideo || (isVideo && quoted.msg.seconds > 15))) return reply("*Reply to an Image or a short Video (max 15s) to make a sticker!* ❌");
+      // Video is limited to 15 seconds for sticker conversion
+      if (!isImage && (!isVideo || (isVideo && quoted.msg.seconds > 15))) {
+          return reply("*Reply to an Image or a short Video (max 15s) to make a sticker!* ❌");
+      }
 
       reply("*Creating sticker...* ⏳");
       
-      // Baileys function to download media
       const mediaBuffer = await zanta.downloadMediaMessage(quoted);
 
-      // Assuming zanta has a method like sendImageAsSticker (common in ZANTA_MD style bots)
       await zanta.sendImageAsSticker(from, mediaBuffer, mek, { packname: "ZANTA", author: "Sticker Bot" });
 
       return reply("> *වැඩේ හරි 🙃✅*");
@@ -124,7 +120,7 @@ cmd(
       const { isVideo } = getMediaType(quoted);
       if (!isVideo) return reply("*The message you replied to is not a Video!* ❌");
 
-      // Check video duration limit (e.g., max 5 minutes for conversion)
+      // Check video duration limit (max 5 minutes for conversion)
       if (quoted.msg.seconds > 300) { 
           return reply("*Video is too long for conversion (Max 5 minutes allowed).* 😞");
       }
@@ -185,39 +181,20 @@ cmd(
 );
 
 
-// --- 4. TEXT to LOGO (logo) ---
-cmd(
-  {
-    pattern: "logo",
-    react: "🎨",
-    desc: "Creates a simple text logo using an external API.",
-    category: "convert",
-    filename: __filename,
-  },
-  async (zanta, mek, m, { from, reply, q }) => {
-    try {
-      if (!q) return reply("*Please provide the text for the logo!* 🎨");
-
-      reply("*Creating logo...* ⏳");
-
-      // IMPORTANT: Use a reliable API for Text to Image. This URL is a placeholder/example.
-      // Replace 'YOUR_API_KEY' and the API URL with your actual configuration.
-      const logoApiUrl = `https://api.lolhuman.xyz/api/textprome/blackpink?apikey=YOUR_API_KEY&text=${encodeURIComponent(q)}`;
-      
-      await zanta.sendMessage(
-        from,
-        {
-          image: { url: logoApiUrl },
-          caption: `*🎨 Logo for: ${q}*`,
-        },
-        { quoted: mek }
-      );
-
-      return reply("> *වැඩේ හරි 🙃✅*");
-      
-    } catch (e) {
-      console.error(e);
-      reply(`*Error creating logo:* ${e.message || e}`);
-    }
-  }
-);
+// // --- 4. TEXT to LOGO (logo) - Temporarily Commented Out ---
+// /*
+// cmd(
+//   {
+//     pattern: "logo",
+//     react: "🎨",
+//     desc: "Creates a simple text logo using an external API.",
+//     category: "convert",
+//     filename: __filename,
+//   },
+//   async (zanta, mek, m, { from, reply, q }) => {
+//     // IMPORTANT: This command is commented out because it requires a valid API URL and Key.
+//     // Uncomment and update the 'logoApiUrl' with a working API before using.
+//     return reply("*Logo command is temporarily disabled. Please update the API key.*");
+//   }
+// );
+// */
