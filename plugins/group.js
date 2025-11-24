@@ -1,4 +1,5 @@
 const { cmd, commands } = require("../command");
+const { getGroupAdmins } = require("../lib/functions"); // getGroupAdmins function එක functions.js එකෙන් ලබා ගනී
 
 // --- 🛡️ Core Admin Check Helper Function ---
 const checkAdminStatus = async (zanta, from, reply, isGroup, m, requireUserAdmin = true) => {
@@ -8,13 +9,13 @@ const checkAdminStatus = async (zanta, from, reply, isGroup, m, requireUserAdmin
     }
 
     try {
-        // 1. Group Metadata නැවත Fetch කරයි (Cache එක නොසලකා හැරීමට)
+        // 1. Group Metadata නැවත Fetch කරයි (මෙය නවතම තත්ත්වය සපයයි)
         let groupMeta = await zanta.groupMetadata(from);
-        const botJid = zanta.user.id;
+        const botJid = zanta.user.id.includes(':') ? zanta.user.id.split(':')[0] + '@s.whatsapp.net' : zanta.user.id;
         const senderJid = m.sender; 
         
-        // 2. Admin ලැයිස්තුව සොයා ගනියි
-        const admins = groupMeta.participants.filter(p => p.admin !== null).map(p => p.id);
+        // 2. ඔබගේ functions.js හි ඇති getGroupAdmins භාවිතයෙන් Admin ලැයිස්තුව සොයා ගනී
+        const admins = getGroupAdmins(groupMeta.participants);
         const isBotAdminNew = admins.includes(botJid);
         const isUserAdminNew = admins.includes(senderJid);
 
@@ -33,7 +34,7 @@ const checkAdminStatus = async (zanta, from, reply, isGroup, m, requireUserAdmin
         
     } catch (e) {
         console.error("Error fetching Group Metadata for Admin check:", e);
-        reply("*Error:* Failed to check admin status. Please try again. 😔");
+        reply("*Error:* Failed to check admin status. Please ensure I am an admin and try again. 😔");
         return false;
     }
 };
@@ -58,7 +59,7 @@ cmd(
     category: "group",
     filename: __filename,
   },
-  async (zanta, mek, m, { from, reply, isGroup, isAdmins, mentionedJid, quoted }) => {
+  async (zanta, mek, m, { from, reply, isGroup, mentionedJid, quoted }) => {
     // User Admin අවශ්‍යයි (requireUserAdmin default = true)
     if (!await checkAdminStatus(zanta, from, reply, isGroup, m)) return;
 
@@ -67,6 +68,12 @@ cmd(
 
       if (!targetJid) {
         return reply("*Please mention or reply to the user you want to kick.* 🧑‍💻");
+      }
+      
+      // Bot owner ව කින්දැමීමට උත්සාහ කරන්නේදැයි පරීක්ෂා කරන්න
+      const ownerNumber = ['94743404814']; // ඔබගේ index.js file එකේ ඇති අංකය
+      if (ownerNumber.includes(targetJid.split('@')[0])) {
+          return reply("*I cannot kick my owner!* 👑");
       }
       
       reply("*Kicking user... 👋*");
@@ -95,7 +102,7 @@ cmd(
     category: "group",
     filename: __filename,
   },
-  async (zanta, mek, m, { from, reply, isGroup, isAdmins, mentionedJid, quoted }) => {
+  async (zanta, mek, m, { from, reply, isGroup, mentionedJid, quoted }) => {
     if (!await checkAdminStatus(zanta, from, reply, isGroup, m)) return;
 
     try {
@@ -127,7 +134,7 @@ cmd(
     category: "group",
     filename: __filename,
   },
-  async (zanta, mek, m, { from, reply, isGroup, isAdmins, mentionedJid, quoted }) => {
+  async (zanta, mek, m, { from, reply, isGroup, mentionedJid, quoted }) => {
     if (!await checkAdminStatus(zanta, from, reply, isGroup, m)) return;
 
     try {
