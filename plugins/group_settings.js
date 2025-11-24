@@ -1,6 +1,7 @@
 const { cmd, commands } = require("../command");
+const { getGroupAdmins } = require("../lib/functions");
 
-// --- Core Admin Check Helper Function (group.js වෙතින් පිටපත් කර ඇත) ---
+// --- 🛡️ Core Admin Check Helper Function ---
 const checkAdminStatus = async (zanta, from, reply, isGroup, m, requireUserAdmin = true) => {
     if (!isGroup) {
         reply("*This command can only be used in a Group!* 🙁");
@@ -9,10 +10,10 @@ const checkAdminStatus = async (zanta, from, reply, isGroup, m, requireUserAdmin
 
     try {
         let groupMeta = await zanta.groupMetadata(from);
-        const botJid = zanta.user.id;
+        const botJid = zanta.user.id.includes(':') ? zanta.user.id.split(':')[0] + '@s.whatsapp.net' : zanta.user.id;
         const senderJid = m.sender; 
         
-        const admins = groupMeta.participants.filter(p => p.admin !== null).map(p => p.id);
+        const admins = getGroupAdmins(groupMeta.participants);
         const isBotAdminNew = admins.includes(botJid);
         const isUserAdminNew = admins.includes(senderJid);
 
@@ -21,6 +22,7 @@ const checkAdminStatus = async (zanta, from, reply, isGroup, m, requireUserAdmin
             return false;
         }
         
+        // Mute/Unmute සඳහා User Admin අවශ්‍යයි. Invite සඳහා Bot Admin පමණක් ප්‍රමාණවත්
         if (requireUserAdmin && !isUserAdminNew) {
             reply("*You must be an Admin to use this command!* 👮‍♂️❌");
             return false;
@@ -30,7 +32,7 @@ const checkAdminStatus = async (zanta, from, reply, isGroup, m, requireUserAdmin
         
     } catch (e) {
         console.error("Error fetching Group Metadata for Admin check:", e);
-        reply("*Error:* Failed to check admin status. Please try again. 😔");
+        reply("*Error:* Failed to check admin status. Please ensure I am an admin and try again. 😔");
         return false;
     }
 };
@@ -46,7 +48,7 @@ cmd(
     category: "group",
     filename: __filename,
   },
-  async (zanta, mek, m, { from, reply, isGroup, isAdmins }) => {
+  async (zanta, mek, m, { from, reply, isGroup }) => {
     // User Admin අවශ්‍යයි (requireUserAdmin default = true)
     if (!await checkAdminStatus(zanta, from, reply, isGroup, m)) return;
 
@@ -72,7 +74,7 @@ cmd(
     category: "group",
     filename: __filename,
   },
-  async (zanta, mek, m, { from, reply, isGroup, isAdmins }) => {
+  async (zanta, mek, m, { from, reply, isGroup }) => {
     // User Admin අවශ්‍යයි
     if (!await checkAdminStatus(zanta, from, reply, isGroup, m)) return;
 
@@ -98,7 +100,7 @@ cmd(
     category: "group",
     filename: __filename,
   },
-  async (zanta, mek, m, { from, reply, isGroup, isAdmins }) => {
+  async (zanta, mek, m, { from, reply, isGroup }) => {
     // User Admin අවශ්‍ය නැත (requireUserAdmin = false)
     if (!await checkAdminStatus(zanta, from, reply, isGroup, m, false)) return;
 
