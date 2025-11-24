@@ -30,9 +30,6 @@ const prefix = '.';
 const ownerNumber = ['94743404814'];
 const credsPath = path.join(__dirname, '/auth_info_baileys/creds.json');
 
-
-// ╔═════════ CORE CONNECTION FUNCTIONS (Missing Definitions) ═════════╗
-
 async function ensureSessionFile() {
     if (!fs.existsSync(credsPath)) {
         if (!config.SESSION_ID) {
@@ -91,8 +88,10 @@ async function connectToWA() {
             console.log('✅ ZANTA-MD connected to WhatsApp');
 
             const up = `> ZANTA-MD connected ✅\n\nPREFIX: ${prefix}`;
-            // Welcome Message - Text Only (Image Error Fix)
-            await zanta.sendMessage(ownerNumber[0] + "@s.whatsapp.net", { text: up });
+            await zanta.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
+                image: { url: `https://github.com/Akashkavindu/ZANTA_MD/blob/main/images/ChatGPT%20Image%20Nov%2021,%202025,%2001_21_32%20AM.png?raw=true` },
+                caption: up
+            });
 
             fs.readdirSync("./plugins/").forEach((plugin) => {
                 if (path.extname(plugin).toLowerCase() === ".js") {
@@ -144,46 +143,17 @@ async function connectToWA() {
 
         const reply = (text) => zanta.sendMessage(from, { text }, { quoted: mek });
 
-        // ╔═════════ ADDED BUTTONS MENU CHECK ═════════╗
-        let isButtonReply = false;
-        let buttonCommand = null;
-        let selectedId = null;
+        // 🚨 REMOVED: Reply Menu Check Block 🚨
 
-        // 🚨 NEW LOGIC: Check if the message is a Button Response
-        if (type === 'buttonsResponseMessage') {
-            isButtonReply = true;
-            buttonCommand = 'menu'; // We execute the 'menu' command
-            selectedId = mek.message.buttonsResponseMessage.selectedButtonId; 
-        }
-        // ╚═══════════════════════════════════════════╝
+        if (isCmd) {
+            // Only runs if it is a prefixed command
 
-
-        // --------------------------------------------------------------------------------
-        // COMMAND EXECUTION BLOCK
-        // --------------------------------------------------------------------------------
-        if (isCmd || isButtonReply) {
-            
-            let commandToExecute;
-            let queryArguments;
-            
-            if (isCmd) {
-                commandToExecute = commandName;
-                queryArguments = q;
-            } else if (isButtonReply) {
-                commandToExecute = buttonCommand; // 'menu'
-                queryArguments = selectedId;     // The Button ID
-                
-                // 🚨 CRITICAL FIX: Pass the Button ID as m.q for the plugin (menu.js) to read
-                m.q = queryArguments; 
-            }
-            
-            const cmd = commands.find((c) => c.pattern === commandToExecute || (c.alias && c.alias.includes(commandToExecute)));
-            
+            const cmd = commands.find((c) => c.pattern === commandName || (c.alias && c.alias.includes(commandName)));
             if (cmd) {
                 if (cmd.react) zanta.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
                 try {
                     cmd.function(zanta, mek, m, {
-                        from, quoted: mek, body, isCmd, command: commandToExecute, args: queryArguments ? [queryArguments] : args, q: queryArguments,
+                        from, quoted: mek, body, isCmd, command: commandName, args, q,
                         isGroup, sender, senderNumber, botNumber2, botNumber, pushname,
                         isMe, isOwner, groupMetadata, groupName, participants, groupAdmins,
                         isBotAdmins, isAdmins, reply,
@@ -194,9 +164,6 @@ async function connectToWA() {
             }
         }
 
-        // --------------------------------------------------------------------------------
-        // REPLY HANDLER BLOCK
-        // --------------------------------------------------------------------------------
         const replyText = body;
         for (const handler of replyHandlers) {
             if (handler.filter(replyText, { sender, message: mek })) {
@@ -212,9 +179,7 @@ async function connectToWA() {
         }
     });
 }
-// ╚═══════════════════════════════════════════════════════════════════╝
 
-// 🚨 START BOT EXECUTION 🚨
 ensureSessionFile();
 
 app.get("/", (req, res) => {
