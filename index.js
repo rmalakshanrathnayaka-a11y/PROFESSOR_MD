@@ -67,7 +67,7 @@ async function connectToWA() {
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, '/auth_info_baileys/'));
   const { version } = await fetchLatestBaileysVersion();
 
-  const zanta = makeWASocket({
+  const danuwa = makeWASocket({
     logger: P({ level: 'silent' }),
     printQRInTerminal: false,
     browser: Browsers.macOS("Firefox"),
@@ -78,7 +78,7 @@ async function connectToWA() {
     generateHighQualityLinkPreview: true,
   });
 
-  zanta.ev.on('connection.update', async (update) => {
+  danuwa.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
       if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
@@ -88,7 +88,7 @@ async function connectToWA() {
       console.log('✅ ZANTA-MD connected to WhatsApp');
 
       const up = `ZANTA-MD connected ✅\n\nPREFIX: ${prefix}`;
-      await zanta.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
+      await danuwa.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
         image: { url: `https://github.com/Akashkavindu/ZANTA_MD/blob/main/images/ChatGPT%20Image%20Nov%2021,%202025,%2001_21_32%20AM.png?raw=true` },
         caption: up
       });
@@ -101,12 +101,12 @@ async function connectToWA() {
     }
   });
 
-  zanta.ev.on('creds.update', saveCreds);
+  danuwa.ev.on('creds.update', saveCreds);
 
-  zanta.ev.on('messages.upsert', async ({ messages }) => {
+  danuwa.ev.on('messages.upsert', async ({ messages }) => {
     for (const msg of messages) {
       if (msg.messageStubType === 68) {
-        await zanta.sendMessageAck(msg.key);
+        await danuwa.sendMessageAck(msg.key);
       }
     }
 
@@ -116,7 +116,7 @@ async function connectToWA() {
     mek.message = getContentType(mek.message) === 'ephemeralMessage' ? mek.message.ephemeralMessage.message : mek.message;
     if (mek.key.remoteJid === 'status@broadcast') return;
 
-    const m = sms(zanta, mek);
+    const m = sms(danuwa, mek);
     const type = getContentType(mek.message);
     const from = mek.key.remoteJid;
     const body = type === 'conversation' ? mek.message.conversation : mek.message[type]?.text || mek.message[type]?.caption || '';
@@ -125,30 +125,30 @@ async function connectToWA() {
     const args = body.trim().split(/ +/).slice(1);
     const q = args.join(' ');
 
-    const sender = mek.key.fromMe ? zanta.user.id : (mek.key.participant || mek.key.remoteJid);
+    const sender = mek.key.fromMe ? danuwa.user.id : (mek.key.participant || mek.key.remoteJid);
     const senderNumber = sender.split('@')[0];
     const isGroup = from.endsWith('@g.us');
-    const botNumber = zanta.user.id.split(':')[0];
+    const botNumber = danuwa.user.id.split(':')[0];
     const pushname = mek.pushName || 'Sin Nombre';
     const isMe = botNumber.includes(senderNumber);
     const isOwner = ownerNumber.includes(senderNumber) || isMe;
-    const botNumber2 = await jidNormalizedUser(zanta.user.id);
+    const botNumber2 = await jidNormalizedUser(danuwa.user.id);
 
-    const groupMetadata = isGroup ? await zanta.groupMetadata(from).catch(() => {}) : '';
+    const groupMetadata = isGroup ? await danuwa.groupMetadata(from).catch(() => {}) : '';
     const groupName = isGroup ? groupMetadata.subject : '';
     const participants = isGroup ? groupMetadata.participants : '';
     const groupAdmins = isGroup ? await getGroupAdmins(participants) : '';
     const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false;
     const isAdmins = isGroup ? groupAdmins.includes(sender) : false;
 
-    const reply = (text) => zanta.sendMessage(from, { text }, { quoted: mek });
+    const reply = (text) => danuwa.sendMessage(from, { text }, { quoted: mek });
 
     if (isCmd) {
       const cmd = commands.find((c) => c.pattern === commandName || (c.alias && c.alias.includes(commandName)));
       if (cmd) {
-        if (cmd.react) zanta.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
+        if (cmd.react) danuwa.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
         try {
-          cmd.function(zanta, mek, m, {
+          cmd.function(danuwa, mek, m, {
             from, quoted: mek, body, isCmd, command: commandName, args, q,
             isGroup, sender, senderNumber, botNumber2, botNumber, pushname,
             isMe, isOwner, groupMetadata, groupName, participants, groupAdmins,
@@ -164,7 +164,7 @@ async function connectToWA() {
     for (const handler of replyHandlers) {
       if (handler.filter(replyText, { sender, message: mek })) {
         try {
-          await handler.function(zanta, mek, m, {
+          await handler.function(danuwa, mek, m, {
             from, quoted: mek, body: replyText, sender, reply,
           });
           break;
