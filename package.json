@@ -6,7 +6,8 @@
   "scripts": {
     "start": "pm2 start index.js --deep-monitoring --attach --name ZANTA-MD",
     "stop": "pm2 stop ZANTA-MD",
-    "restart": "pm2 restart ZANTA-MD"
+    "restart": "pm2 restart ZANTA-MD",
+    "postinstall": "npm cache clean --force"
   },
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
