@@ -6,7 +6,7 @@ cmd(
 {
 pattern: "save",
 react: "💾",
-desc: "Saves and resends a View Once image.",
+desc: "Saves View Once image.",
 category: "general",
 filename: __filename,
 },
