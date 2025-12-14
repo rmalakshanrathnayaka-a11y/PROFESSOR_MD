@@ -4,7 +4,7 @@ const { runtime, sleep } = require('../lib/functions'); 
 const config = require("../config"); // BOT_NAME ලබා ගැනීමට
 
 // Image URL එක මෙහි ඇත
-const STATUS_IMAGE_URL = "https://github.com/Akashkavindu/ZANTA_MD/blob/main/images/alive.jpg?raw=true";
+const STATUS_IMAGE_URL = "https://github.com/Akashkavindu/ZANTA_MD/blob/main/images/alive-new.jpg?raw=true";
 
 // Helper function to format bytes to a readable string
 function bytesToSize(bytes) {
