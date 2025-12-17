@@ -1,150 +1,81 @@
 const { cmd } = require("../command");
-const { ytmp4, ytmp3 } = require("@vreden/youtube_scraper"); 
+const { ytmp4, ytmp3 } = require("@vreden/youtube_scraper");
 const yts = require("yt-search");
-const axios = require('axios'); // ✅ Axius is confirmed
+const axios = require('axios');
 const { sleep } = require("../lib/functions");
 
-// --- Core Helper Function for Download ---
+// --- 🛠️ Core Helper Function ---
 async function downloadYoutubeVreden(url, format, zanta, from, mek, reply, data) {
-    if (!url) return reply("❌ Invalid YouTube URL provided.");
-    
-    // Duration Check Logic
+    if (!url) return reply("❌ Invalid YouTube URL.");
+
     let durationParts = data.timestamp.split(":").map(Number);
-    let totalSeconds = 0;
-    
-    if (durationParts.length === 3) {
-        totalSeconds = durationParts[0] * 3600 + durationParts[1] * 60 + durationParts[2];
-    } else if (durationParts.length === 2) {
-        totalSeconds = durationParts[0] * 60 + durationParts[1];
-    }
+    let totalSeconds = durationParts.length === 3 
+        ? durationParts[0] * 3600 + durationParts[1] * 60 + durationParts[2] 
+        : durationParts[0] * 60 + durationParts[1];
 
-    if (format === 'mp4' && totalSeconds > 600) { 
-        return reply("⏳ *Sorry, videos longer than 10 minutes are not supported for stable download (WhatsApp limits).*");
-    }
-    
-    if (format === 'mp3' && totalSeconds > 1800) { 
-        return reply("⏳ *Sorry, audio files longer than 30 minutes are not supported.*");
-    }
+    // සීමාවන් පරීක්ෂාව
+    if (format === 'mp4' && totalSeconds > 600) return reply("⏳ *වීඩියෝව විනාඩි 10 කට වඩා වැඩි බැවින් බාගත කළ නොහැක.*");
+    if (format === 'mp3' && totalSeconds > 3600) return reply("⏳ *සින්දුව විනාඩි 60 කට වඩා වැඩි බැවින් බාගත කළ නොහැක.*");
 
-    let tempReplyKey = null;
+    const botName = global.CURRENT_BOT_SETTINGS.botName;
+    let tempMsg;
 
     try {
-        let finalData;
-        let quality = (format === 'mp4') ? '360' : '192'; // 360p පමණක් උත්සාහ කරයි
-        
-        // Initial Message for Status Update
-        const initialReply = await reply(`*Starting download (${format.toUpperCase()}):* ${data.title} \n> Quality: ${quality}p 📥`);
-        tempReplyKey = initialReply.key;
-        
-        await sleep(1000); 
+        let quality = (format === 'mp4') ? '360' : '192';
+        tempMsg = await reply(`*📥 Downloading ${format.toUpperCase()}...*\n\n🎬 *Title:* ${data.title}\n⭐ *Quality:* ${quality}p`);
 
-        // --- 1. Scraper Link Fetch ---
-        if (format === 'mp4') {
-            finalData = await ytmp4(url, quality);
-        } else if (format === 'mp3') {
-            finalData = await ytmp3(url, quality);
-        }
+        let finalData = (format === 'mp4') ? await ytmp4(url, quality) : await ytmp3(url, quality);
 
         if (!finalData || !finalData.download || !finalData.download.url) {
-             return zanta.sendMessage(from, { text: `*❌ Download Failed!* Reason: Could not get a valid download URL from the scraper. (Code: 202)`, edit: tempReplyKey });
+            return await zanta.sendMessage(from, { text: "❌ *බාගත කිරීමේ ලින්ක් එක ලබා ගැනීමට නොහැකි විය.*", edit: tempMsg.key });
         }
 
-        const downloadUrl = finalData.download.url;
-        
-        // --- 2. Download Link එකෙන් Buffer එක Fetch කිරීම (Axios) ---
-        const response = await axios.get(downloadUrl, { 
-            responseType: 'arraybuffer',
-            timeout: 60000 
-        });
-        
-        const mediaBuffer = response.data; 
+        // Axios හරහා Buffer එක ලබා ගැනීම
+        const response = await axios.get(finalData.download.url, { responseType: 'arraybuffer', timeout: 60000 });
+        const mediaBuffer = response.data;
 
-        if (!mediaBuffer || mediaBuffer.length === 0) {
-            return zanta.sendMessage(from, { text: "*❌ Download Failed!* Reason: Downloaded file is empty or link expired rapidly. 😔", edit: tempReplyKey });
-        }
+        const caption = `*✅ Download Complete!*\n\n🎬 *Title:* ${data.title}\n\n> *© ${botName}*`;
 
-        const caption = `*Download Complete (${format.toUpperCase()})!* \n\n🎬 Title: ${data.title} \n⭐ Quality: ${quality}p`;
-        
-        // --- 3. Buffer එක Chat එකට යැවීම ---
         if (format === 'mp4') {
-            await zanta.sendMessage(
-                from, 
-                { 
-                    video: mediaBuffer, 
-                    caption: caption,
-                    mimetype: 'video/mp4' 
-                }, 
-                { quoted: mek }
-            );
-        } else if (format === 'mp3') {
-             await zanta.sendMessage(
-                from, 
-                { 
-                    audio: mediaBuffer, 
-                    caption: caption,
-                    mimetype: 'audio/mpeg' 
-                }, 
-                { quoted: mek }
-            );
+            await zanta.sendMessage(from, { video: mediaBuffer, caption: caption, mimetype: 'video/mp4' }, { quoted: mek });
+        } else {
+            await zanta.sendMessage(from, { audio: mediaBuffer, mimetype: 'audio/mpeg' }, { quoted: mek });
         }
 
-        // Final message
-        return zanta.sendMessage(from, { text: `> *Download Complete!* ${format === 'mp4' ? '🎞️' : '🎶'}✅`, edit: tempReplyKey });
+        return await zanta.sendMessage(from, { text: `*වැඩේ හරි 🙃✅*`, edit: tempMsg.key });
 
     } catch (e) {
-        console.error(`Vreden Download Error (${format}):`, e);
-        
-        let errorText = `*❌ Download Failed!* \n\n*Reason:* Download link expired, Network Error, or Timeout. 😔`;
-        
-        // Send the final error message
-        if (tempReplyKey) {
-            zanta.sendMessage(from, { text: errorText, edit: tempReplyKey });
-        } else {
-            reply(errorText);
-        }
+        console.error(e);
+        if (tempMsg) await zanta.sendMessage(from, { text: `❌ *Error:* ${e.message}`, edit: tempMsg.key });
     }
 }
 
-// --- $ytmp4 Command (Video Download) ---
-cmd(
-    {
-        pattern: "ytmp4",
-        alias: ["vid", "ytvideo"],
-        react: "🎞️",
-        desc: "Download YouTube video.",
-        category: "download",
-        filename: __filename,
-    },
-    async (zanta, mek, m, { from, reply, q }) => {
-        if (!q) return reply("*Please provide a YouTube link or search query.* 🔗");
-        
-        const search = await yts(q);
-        const data = search.videos[0];
-        
-        if (!data) return reply("❌ Could not find the requested video.");
-        
-        await downloadYoutubeVreden(data.url, 'mp4', zanta, from, mek, reply, data);
-    }
-);
+// --- 🎞️ YT MP4 Command ---
+cmd({
+    pattern: "ytmp4",
+    alias: ["video", "vid"],
+    react: "🎞️",
+    desc: "Download YouTube videos.",
+    category: "download",
+    filename: __filename,
+}, async (zanta, mek, m, { from, reply, q }) => {
+    if (!q) return reply("❌ *කරුණාකර YouTube ලින්ක් එකක් හෝ සෙවිය යුතු නම ලබා දෙන්න.*");
+    const search = await yts(q);
+    if (!search.videos[0]) return reply("❌ *වීඩියෝව සොයාගත නොහැකි විය.*");
+    await downloadYoutubeVreden(search.videos[0].url, 'mp4', zanta, from, mek, reply, search.videos[0]);
+});
 
-// --- $ytmp3 Command (Audio Download) ---
-cmd(
-    {
-        pattern: "ytmp3",
-        alias: ["audio", "ytaudio"],
-        react: "🎶",
-        desc: "Download YouTube Audio.",
-        category: "download",
-        filename: __filename,
-    },
-    async (zanta, mek, m, { from, reply, q }) => {
-        if (!q) return reply("*Please provide a YouTube link or search query.* 🔗");
-        
-        const search = await yts(q);
-        const data = search.videos[0];
-        
-        if (!data) return reply("❌ Could not find the requested video.");
-        
-        await downloadYoutubeVreden(data.url, 'mp3', zanta, from, mek, reply, data);
-    }
-);
+// --- 🎶 YT MP3 Command ---
+cmd({
+    pattern: "ytmp3",
+    alias: ["ytaudio", "song2"],
+    react: "🎶",
+    desc: "Download YouTube audio.",
+    category: "download",
+    filename: __filename,
+}, async (zanta, mek, m, { from, reply, q }) => {
+    if (!q) return reply("❌ *කරුණාකර YouTube ලින්ක් එකක් හෝ සෙවිය යුතු නම ලබා දෙන්න.*");
+    const search = await yts(q);
+    if (!search.videos[0]) return reply("❌ *වීඩියෝව සොයාගත නොහැකි විය.*");
+    await downloadYoutubeVreden(search.videos[0].url, 'mp3', zanta, from, mek, reply, search.videos[0]);
+});
