@@ -58,9 +58,10 @@ const getMedia = (quoted) => {
 
 // 1. 🖼️ IMAGE/VIDEO TO STICKER (.s)
 cmd({
-    pattern: "s",
-    alias: ["sticker", "st"],
+    pattern: "sticker",
+    alias: ["s", "st"],
     react: "🌟",
+    desc: "Convert image to sticker.",
     category: "convert",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, quoted }) => {
@@ -89,6 +90,7 @@ cmd({
 cmd({
     pattern: "toimg",
     react: "🖼️",
+    desc: "Convert sticker to image.",
     category: "convert",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, quoted }) => {
@@ -116,6 +118,7 @@ cmd({
     pattern: "tomp3",
     alias: ["toaudio"],
     react: "🎶",
+    desc: "Convert video to audio.",
     category: "convert",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, quoted }) => {
@@ -144,6 +147,7 @@ cmd({
     pattern: "tourl",
     alias: ["url"],
     react: "🔗",
+    desc: "Convert image to url.",
     category: "convert",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, quoted }) => {
@@ -166,6 +170,7 @@ cmd({
 cmd({
     pattern: "toqr",
     react: "🏁",
+    desc: "Convert link to qr code.",
     category: "convert",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, args }) => {
@@ -182,6 +187,7 @@ cmd({
     pattern: "removebg",
     alias: ["rmbg"],
     react: "✂️",
+    desc: "Remove image background.",
     category: "convert",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, quoted }) => {
@@ -222,6 +228,7 @@ cmd({
     pattern: "genimg",
     alias: ["aiimg", "draw"],
     react: "🎨",
+    desc: "Create image using AI.",
     category: "media",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, args }) => {
