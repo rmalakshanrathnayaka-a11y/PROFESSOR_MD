@@ -188,7 +188,7 @@ cmd({
     alias: ["rmbg"],
     react: "✂️",
     desc: "Remove image background.",
-    category: "convert",
+    category: "media",
     filename: __filename,
 }, async (zanta, mek, m, { from, reply, quoted }) => {
     try {
